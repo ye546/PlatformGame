@@ -65,7 +65,7 @@ int main(int agrc, char** argv) {
 		{
 			handleEvents(event, isRunning, handle, player, vRef, pRef, renderer);
 			
-			//förbättra hoppfunktionen, för den suger verkligen cancerdase.
+			//fÃ¶rbÃ¤ttra hoppfunktionen, fÃ¶r den suger verkligen cancerdase.
 
 			//check if spacebar is pressed
 			if (event.type == SDL_KEYDOWN) {
