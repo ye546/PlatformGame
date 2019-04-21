@@ -16,16 +16,20 @@ SDL_Rect Object::rect(SDL_Rect rect) {
 	return(rect = {x, y, OB_WIDTH, OB_HEIGHT});
 }
 
-void Object::Grab(SDL_Rect *r) {
+bool Object::Grab(SDL_Rect &r) {
 	int x(0), y(0);
+	bool clicked = false;
+
 	SDL_GetMouseState(&x, &y);	//insert mouse coordinates to x and y
-	if (mouse_inside_bounds_check(*r)) {
-		if (SDL_GetMouseState(0, 0) & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-			//set X and Y to be the midpoint of the grabbed object
-			r->x = (x - r->w / 2);	
-			r->y = (y - r->h / 2);
-		}
+		
+	if (SDL_GetMouseState(0, 0) & SDL_BUTTON(SDL_BUTTON_RIGHT) && mouse_inside_bounds_check(r)) {
+		if (clicked == false)
+			clicked = true;
 	}
+	else if (SDL_GetMouseState(0, 0) & SDL_BUTTON(SDL_BUTTON_RIGHT) && !mouse_inside_bounds_check(r))
+		clicked = false;
+
+	return clicked;
 }
 
 void Object::Render(SDL_Renderer* rend, SDL_Texture* t, SDL_Rect* crop, SDL_Rect* rect) {
@@ -38,7 +42,9 @@ Object::~Object() {
 
 bool Object::mouse_inside_bounds_check(SDL_Rect &box) {
 	int x(0), y(0);
+
 	SDL_GetMouseState(&x, &y);
+
 	if ((x > box.x) && (x < box.x + box.w) && (y > box.y) && (y < box.y + box.h)) {
 		//printf("I am inside the bounds!\n");
 		return true;
@@ -75,8 +81,10 @@ void Object::resize(SDL_Rect& rect, SDL_Event& ev, bool one){
 			}
 		}
 	}
+
 	if (rect.w < 5)
 		rect.w = 5;
+
 	if (rect.h < 5)
 		rect.h = 5;
 }
@@ -84,6 +92,7 @@ void Object::resize(SDL_Rect& rect, SDL_Event& ev, bool one){
 bool Object::check(Object *o, Object *l) {
 	if (SDL_HasIntersection(&o->_objectRect, &l->_objectRect))
 		return true;
+
 	return false;
 }
 
