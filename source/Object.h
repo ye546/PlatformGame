@@ -5,7 +5,6 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SpriteLoading.h"
-
 #include <stdlib.h>
 
 
@@ -21,12 +20,11 @@ public:
 	~Object();
 	
 	void Render(SDL_Renderer* rend, SDL_Texture* t, SDL_Rect* crop, SDL_Rect* rect);
-	bool mouse_inside_bounds_check(SDL_Rect &box);
 	void resize(SDL_Rect& rect, SDL_Event& ev, bool one);
 	void occupied_spot(Object *o, Object *l);
+	bool Grab(SDL_Rect &r);
 	bool check(Object *o, Object *l);
-	void Grab(SDL_Rect *r);
-
+	bool mouse_inside_bounds_check(SDL_Rect &box);
 
 	//SDL_Rect img_coords[WALK_ANIMATION];
 	SDL_Rect rect(SDL_Rect rect); //predefine the rect position
