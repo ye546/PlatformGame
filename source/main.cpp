@@ -44,7 +44,7 @@ Platforms *NewPlatform(SDL_Renderer *r);
 void Gravity(SDL_Rect *x, bool &falling);
 
 //returns true is there is a collision
-bool Collision(SDL_Rect &rect1, SDL_Rect &rect2);
+void Collision(SDL_Rect &rect1, SDL_Rect &rect2);
 
 //crop rigging for specific image, not ideal because it only works for 1 image
 void crops(SDL_Rect* crop);
@@ -119,10 +119,10 @@ int main(int agrc, char** argv) {
 	SDL_Event event;
 
 	//&vector to our Object vector
-	auto &vRef = (*objects);
-	auto &pRef = (*platforms);
+	auto &ObjectRef = (*objects);
+	auto &PlatformRef = (*platforms);
 
-	create_and_place_platform(renderer, pRef);
+	create_and_place_platform(renderer, PlatformRef);
 
 	//turn on gravity at the beginning
 	falling = true;
@@ -140,7 +140,7 @@ int main(int agrc, char** argv) {
 		//handling all the key events
 		while (SDL_PollEvent(&event))
 		{
-			handleEvents(event, isRunning, handle, player, vRef, pRef, renderer);
+			handleEvents(event, isRunning, handle, player, ObjectRef, PlatformRef, renderer);
 			
 			//förbättra hoppfunktionen, för den suger verkligen cancerdase.
 
@@ -160,13 +160,13 @@ int main(int agrc, char** argv) {
 		//xd(vRef);
 
 		//Draw all the monsters
-		DrawMonsters(vRef, player, renderer, event, handle);
+		DrawMonsters(ObjectRef, player, renderer, event, handle);
 
 		//draw all platforms
-		DrawPlatforms(pRef, player, renderer, event, handle);
+		DrawPlatforms(PlatformRef, player, renderer, event, handle);
 
 		//retrive status of the player, etc is he falling or not?
-		falling = is_touching_platform(pRef, &player->p_rect);
+		falling = is_touching_platform(PlatformRef, &player->p_rect);
 
 		////increase frame of player
 		//frame++;
@@ -188,9 +188,9 @@ int main(int agrc, char** argv) {
 	}
 
 	//destroy all created textures
-	for (int i = 0; i < vRef.size(); i++)
+	for (int i = 0; i < ObjectRef.size(); i++)
 	{
-		SDL_DestroyTexture(vRef[i]->_objectTexture);
+		SDL_DestroyTexture(ObjectRef[i]->_objectTexture);
 	}
 	//delete[] objects;
 	//delete[] platforms;
@@ -249,43 +249,39 @@ void Movement(Player* player, VEC_OBJ &ob, SDL_Event &ev)
 		break;
 	}
 
-	if (flags[0])
-	{
-		//walk up
-		player->p_rect.y -= 5;
-		for (int i = 0; i < ob.size(); i++) {
-			if (Collision(player->p_rect, ob[i]->_objectRect))
-				ob[i]->_objectRect.y -= 5;
-		}
-	}
+	//if (flags[0])
+	//{
+	//	//walk up
+	//	player->p_rect.y -= 5;
+	//	for (int i = 0; i < ob.size(); i++) {
+	//		Collision(player->p_rect, ob[i]->_objectRect);
+	//	}
+	//}
 
 	if (flags[1])
 	{
 		//walk right
 		player->p_rect.x += 5;
 		for (int i = 0; i < ob.size(); i++) {
-			if (Collision(player->p_rect, ob[i]->_objectRect))
-				ob[i]->_objectRect.x += 5;
+			Collision(player->p_rect, ob[i]->_objectRect);
 		}
 	}
 
-	if (flags[2])
-	{
-		//walk down
-		player->p_rect.y += 5;
-		for (int i = 0; i < ob.size(); i++) {
-			if (Collision(player->p_rect, ob[i]->_objectRect))
-				ob[i]->_objectRect.y += 5;
-		}
-	}
+	//if (flags[2])
+	//{
+	//	//walk down
+	//	player->p_rect.y += 5;
+	//	for (int i = 0; i < ob.size(); i++) {
+	//		Collision(player->p_rect, ob[i]->_objectRect);
+	//	}
+	//}
 
 	if (flags[3])
 	{
 		//walk left
 		player->p_rect.x -= 5;
 		for (int i = 0; i < ob.size(); i++) {
-			if (Collision(player->p_rect, ob[i]->_objectRect))
-				ob[i]->_objectRect.x -= 5;//push the block
+			Collision(player->p_rect, ob[i]->_objectRect);
 		}
 	}
 }
@@ -301,19 +297,33 @@ void Gravity(SDL_Rect *x, bool& falling) {
 	}
 }
 
-bool Collision(SDL_Rect& rect1, SDL_Rect& rect2) {
-	//if all of these are false 
-	//then there cannot be a collision
-	if (rect1.x >= (rect2.x + rect2.w))
-		return false;
-	if ((rect1.x + rect1.w) <= rect2.x)
-		return false;
-	if (rect1.y >= (rect2.y + rect2.h))
-		return false;
-	if ((rect1.y + rect1.h) <= rect2.y)
-		return false;
+void Collision(SDL_Rect &rect1, SDL_Rect &rect2) {
+	if (SDL_HasIntersection(&rect1, &rect2))
+	{
+		//if (rect1.x >= (rect2.x + rect2.w))
+		//{
+		//	//return false;
+		//	rect1.x += 5;
+		//}
 
-	return true;
+		//if ((rect1.x + rect1.w) <= rect2.x)
+		//{
+		////return false;
+		//rect1.x -= 5;
+		//}
+
+		if (rect1.y >= (rect2.y + rect2.h))
+		{
+			//return false;
+			rect1.y += 5;
+		}
+
+		if ((rect1.y + rect1.h) <= rect2.y)
+		{
+			//return false;
+			rect1.y -= 5;
+		}
+	}
 }
 
 //void crops(SDL_Rect* crop) {
@@ -473,8 +483,9 @@ void DrawMonsters(VEC_OBJ &v, Player *player, SDL_Renderer *r, SDL_Event &event,
 	for (int i = 0; i < v.size(); i++) {
 		//render all the objects
 		v[i]->Render(r, v[i]->_objectTexture, NULL, &v[i]->_objectRect);
+		
 		//call thinking for monsters
-		//MonsterThinkingFunction(v[i], player);
+		MonsterThinkingFunction(v[i], player);
 
 		//allow grabbing for all the objects
 		MovingAnObject(*player, v[i]->_objectRect);
@@ -552,6 +563,6 @@ void MovingAnObject(Player &p, SDL_Rect &ob) {
 		SDL_GetMouseState(&x, &y);
 		ob.x = (x - ob.w / 2);
 		ob.y = (y - ob.h / 2);
-		printf("POS: X:%d Y:%d", ob.x, ob.y);
+		printf("POS: X:%d Y:%d\n", ob.x, ob.y);
 	}
 }
