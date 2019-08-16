@@ -1,12 +1,15 @@
-#ifndef OBJECT_H
-#define OBJECT_H
-
 #pragma once
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SpriteLoading.h"
-#include <stdlib.h>
+#include "Engine.h"
+#include <stdio.h>
+#include <vector>
+#include "EngineHeader.h"
+#define ObjectSprite "redbox.png"
 
+//looking for engine
+extern Engine* engine;
 
 constexpr auto OB_WIDTH = 50;
 constexpr auto OB_HEIGHT = 50;
@@ -15,21 +18,26 @@ constexpr auto OB_HEIGHT = 50;
 
 class Object : public SpriteLoading{
 public:
-	Object(SDL_Renderer* r, const char* path);
+	Object(SDL_Renderer* r);
 	Object();
 	~Object();
 	
-	void Render(SDL_Renderer* rend, SDL_Texture* t, SDL_Rect* crop, SDL_Rect* rect);
-	void resize(SDL_Rect& rect, SDL_Event& ev, bool one);
-	void occupied_spot(Object *o, Object *l);
-	bool Grab(SDL_Rect &r);
-	bool check(Object *o, Object *l);
-	bool mouse_inside_bounds_check(SDL_Rect &box);
+	virtual void Render(SDL_Renderer* r, SDL_Event& ev, bool flags);
+	virtual void Resize(SDL_Event& ev, bool flags);
+	virtual bool Grab();
+	virtual void Collision(Object* ob);
+	void KillAllMonsters();
+	void CreateNewObject(SDL_Renderer* r);
+	bool Check(Object *o, Object *l);
+	bool MouseInsideBoundsCheck(SDL_Rect &box);
+
+	int ObjectID;
 
 	//SDL_Rect img_coords[WALK_ANIMATION];
-	SDL_Rect rect(SDL_Rect rect); //predefine the rect position
-	SDL_Rect _objectRect;
-	SDL_Texture *_objectTexture;
-
+	//SDL_Rect Rect(SDL_Rect rect); //predefine the rect position
+	SDL_Rect ObjectRect;
+	SDL_Texture *ObjectTexture;
+	
+	//Vector to store all objects
+	std::vector<Object*> m_Objects;
 };
-#endif

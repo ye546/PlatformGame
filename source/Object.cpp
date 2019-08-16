@@ -1,46 +1,147 @@
 #include "Object.h"
 
-Object::Object(SDL_Renderer* r, const char* path) {
-	this->_objectTexture = SpriteLoader(r, path);
-}
-
-Object::Object(){}
-
-//this spawns objects mid on mousepointer
-SDL_Rect Object::rect(SDL_Rect rect) {
+Object::Object(SDL_Renderer* r) {
+	//Apply texture for the object
+	this->ObjectTexture = SpriteLoader(r, ObjectSprite);
 	int x, y;
+	//Set its position to the mouse
 	SDL_GetMouseState(&x, &y);
 	//set midpoint for circle to be mousepos
 	x -= OB_WIDTH / 2;
 	y -= OB_HEIGHT / 2;
-	return(rect = {x, y, OB_WIDTH, OB_HEIGHT});
+	this->ObjectRect = { x, y, OB_WIDTH, OB_HEIGHT }; //and this will define the position for the object
 }
 
-bool Object::Grab(SDL_Rect &r) {
-	int x(0), y(0);
-	bool clicked = false;
-
-	SDL_GetMouseState(&x, &y);	//insert mouse coordinates to x and y
-		
-	if (SDL_GetMouseState(0, 0) & SDL_BUTTON(SDL_BUTTON_RIGHT) && mouse_inside_bounds_check(r)) {
-		if (clicked == false)
-			clicked = true;
-	}
-	else if (SDL_GetMouseState(0, 0) & SDL_BUTTON(SDL_BUTTON_RIGHT) && !mouse_inside_bounds_check(r))
-		clicked = false;
-
-	return clicked;
-}
-
-void Object::Render(SDL_Renderer* rend, SDL_Texture* t, SDL_Rect* crop, SDL_Rect* rect) {
-	SDL_RenderCopy(rend, t, crop, rect);
+Object::Object(){
+	//do nothing
 }
 
 Object::~Object() {
-	SDL_DestroyTexture(_objectTexture);
+	SDL_DestroyTexture(ObjectTexture);
 }
 
-bool Object::mouse_inside_bounds_check(SDL_Rect &box) {
+void Object::Render(SDL_Renderer* r, SDL_Event& ev, bool flags) {
+	SDL_RenderCopy(r, ObjectTexture, NULL, &this->ObjectRect);
+
+	bool grab = this->Grab();
+	if (grab)
+	{
+		int x(0), y(0);
+		//Update objects position to the mouse pos
+		SDL_GetMouseState(&x, &y);
+		this->ObjectRect.x = (x - this->ObjectRect.w / 2);
+		this->ObjectRect.y = (y - this->ObjectRect.h / 2);
+		printf("Object(%i) POS: X:%d Y:%d\n", this->ObjectID, this->ObjectRect.x, this->ObjectRect.y);
+	}
+
+	Resize(ev, flags);
+}
+
+void Object::Resize(SDL_Event& ev, bool flags) {
+	if (MouseInsideBoundsCheck(this->ObjectRect) && SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT))
+	{
+		if (flags)
+		{
+			if (ev.type == SDL_MOUSEWHEEL)
+			{
+				if (ev.wheel.y > 0)
+					this->ObjectRect.w += 5;
+				if (ev.wheel.y < 0)
+					this->ObjectRect.w -= 5;
+				if (ev.wheel.y = 0)
+					this->ObjectRect.w = this->ObjectRect.w;
+			}
+		}
+
+		else if (!flags)
+		{
+			if (ev.type == SDL_MOUSEWHEEL)
+			{
+				if (ev.wheel.y > 0)
+					this->ObjectRect.h += 10;
+				if (ev.wheel.y < 0)
+					this->ObjectRect.h -= 10;
+				if (ev.wheel.y = 0)
+					this->ObjectRect.h = this->ObjectRect.h;
+			}
+		}
+	}
+
+	if (this->ObjectRect.w < 5)
+		this->ObjectRect.w = 5;
+
+	if (this->ObjectRect.h < 5)
+		this->ObjectRect.h = 5;
+}
+
+bool Object::Grab() {
+	if (MouseInsideBoundsCheck(this->ObjectRect) && SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT))
+	{
+		return true;
+	}
+	else return false;
+}
+
+void Object::Collision(Object* ob) {
+	if (this->ObjectRect.x + this->ObjectRect.w >= ob->ObjectRect.x)
+	{
+		this->ObjectID < ob->ObjectID;
+		this->ObjectRect.x--;
+	}
+	if (this->ObjectRect.x >= ob->ObjectRect.x + ob->ObjectRect.w)
+	{
+		this->ObjectID < ob->ObjectID;
+		this->ObjectRect.x++;
+	}
+	if (this->ObjectRect.y + this->ObjectRect.h >= ob->ObjectRect.y)
+	{
+		this->ObjectID < ob->ObjectID;
+		this->ObjectRect.y--;
+	}
+	if (this->ObjectRect.y >= ob->ObjectRect.y + ob->ObjectRect.h)
+	{
+		this->ObjectID < ob->ObjectID;
+			this->ObjectRect.y++;
+	}
+}
+
+void Object::KillAllMonsters() {
+	if (!m_Objects.empty()) {
+		for (auto &i : m_Objects) {
+			SDL_DestroyTexture(i->ObjectTexture);
+			i = nullptr;
+		}
+		printf("Destroyed %i blocks\n", m_Objects.size());
+		m_Objects.clear();
+	}
+	else
+		printf("There are no blocks to destroy!\n");
+}
+
+void Object::CreateNewObject(SDL_Renderer* r) {
+	Object* ob = new Object(r);
+
+	//assign an ID to the object
+	for (int i = 0; i < m_Objects.size(); i++) {
+		if (m_Objects.empty())
+			ob->ObjectID += 1;
+		else if (m_Objects.size() > 0) {
+			ob->ObjectID = m_Objects[i]->ObjectID += 1;
+		}
+	}
+	//ob->ObjectID = rand() % 100 + 1;
+	m_Objects.push_back(ob);
+	printf("Added a new Monster to m_Objects!\n");
+}
+
+bool Object::Check(Object *o, Object *l) {
+	if (SDL_HasIntersection(&o->ObjectRect, &l->ObjectRect))
+		return true;
+
+	return false;
+}
+
+bool Object::MouseInsideBoundsCheck(SDL_Rect &box) {
 	int x(0), y(0);
 
 	SDL_GetMouseState(&x, &y);
@@ -50,68 +151,4 @@ bool Object::mouse_inside_bounds_check(SDL_Rect &box) {
 		return true;
 	}
 	return false;
-}
-
-void Object::resize(SDL_Rect& rect, SDL_Event& ev, bool one){
-	if (mouse_inside_bounds_check(rect) && SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT))
-	{
-		if (one)
-		{
-			if (ev.type == SDL_MOUSEWHEEL)
-			{
-				if (ev.wheel.y > 0)
-					rect.w += 5;
-				if (ev.wheel.y < 0)
-					rect.w -= 5;
-				if (ev.wheel.y = 0)
-					rect.w = rect.w;
-			}
-		}
-
-		else if (!one)
-		{
-			if (ev.type == SDL_MOUSEWHEEL)
-			{
-				if (ev.wheel.y > 0)
-					rect.h += 10;
-				if (ev.wheel.y < 0)
-					rect.h -= 10;
-				if (ev.wheel.y = 0)
-					rect.h = rect.h;
-			}
-		}
-	}
-
-	if (rect.w < 5)
-		rect.w = 5;
-
-	if (rect.h < 5)
-		rect.h = 5;
-}
-
-bool Object::check(Object *o, Object *l) {
-	if (SDL_HasIntersection(&o->_objectRect, &l->_objectRect))
-		return true;
-
-	return false;
-}
-
-void Object :: occupied_spot(Object *o, Object *l) {
-	if (check(o, l)) {
-		if (o->_objectRect.x >= (l->_objectRect.x + l->_objectRect.w)) {
-			o->_objectRect.x = l->_objectRect.x + l->_objectRect.w;
-		}
-
-		if (o->_objectRect.x + o->_objectRect.w <= l->_objectRect.x) {
-			o->_objectRect.x = l->_objectRect.x - l->_objectRect.w;
-		}
-
-		if (o->_objectRect.y >= (l->_objectRect.y + l->_objectRect.h)) {
-			o->_objectRect.y = l->_objectRect.y + l->_objectRect.h;
-		}
-
-		if (o->_objectRect.y + o->_objectRect.h <= l->_objectRect.y) {
-			o->_objectRect.y = l->_objectRect.y - l->_objectRect.h;
-		}
-	}
 }
